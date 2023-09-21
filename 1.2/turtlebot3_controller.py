@@ -125,25 +125,6 @@ class Turtlebot3Controller(Node):
         else:
             self.publishVelocityCommand(0.2, 0.0)
 
-    def turn(self):
-        cal = cal_avg(self.valueLaserRaw["ranges"])
-
-        max_index = cal.index(max(cal))
-        print(max_index)
-        if max_index < 18 and max_index > 0:
-            if max_index < 3:
-                self.publishVelocityCommand(0.0, 0.2)
-            else:
-                self.publishVelocityCommand(0.0, 0.9)
-        elif max_index > 18:
-            if max_index > 32:
-                self.publishVelocityCommand(0.0, -0.2)
-            else:
-                self.publishVelocityCommand(0.0, -0.9)
-        else:
-            self.publishVelocityCommand(0.0, 0.0)
-            self.step += 1
-
     def normalize_angle(self, angle):
         if angle > math.pi:
             n = (angle / math.pi) % 2
