@@ -1,4 +1,5 @@
 import math
+import random
 import numpy
 
 
@@ -37,4 +38,28 @@ def get_key():
     return input_theta
 
 
-print(90 % 180)
+def fuzzy_rule(sensor_membership):
+    rule = {}
+    rule[0] = sensor_membership[0]
+    rule[1] = sensor_membership[2] * -0.5
+    rule[2] = sensor_membership[3] * 0.5
+    rule[3] = sensor_membership[4] * -0.25
+    rule[4] = sensor_membership[5] * 0.25
+
+    angular = rule[1] + rule[2] + rule[3] + rule[4]
+    linear = rule[0]
+
+    return linear, angular
+
+
+# test fuzzy_rule
+def test_fuzzy_rule():
+    random.seed(0)
+    for i in range(7):
+        sensor = [random.random() for i in range(7)]
+        linear, angular = fuzzy_rule(sensor)
+        print("linear : ", linear)
+        print("angular : ", angular)
+
+
+test_fuzzy_rule()

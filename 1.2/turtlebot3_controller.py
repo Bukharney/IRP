@@ -102,6 +102,7 @@ class Turtlebot3Controller(Node):
         _, _, self.last_rad = self.euler_from_quaternion(
             self.valueOdometry["orientation"]
         )
+        self.init_odom_state = True
 
     def avoid_hit(self):
         cal = cal_avg(self.valueLaserRaw["ranges"])
@@ -198,19 +199,62 @@ class Turtlebot3Controller(Node):
                 self.get_key_state = False
                 self.state += 1
 
+    def membership(self):
+        def grouped_sensor(self):
+            cal = cal_avg(self.valueLaserRaw["ranges"])
+            front = [cal[0], cal[35]]
+            back = [cal[17], cal[18]]
+            front_left = cal[3:5]
+            front_right = cal[30:32]
+            left = cal[8:10]
+            right = cal[26:28]
+            back_left = cal[12:14]
+            back_right = cal[21:23]
+            return (
+                min(front),
+                min(back),
+                min(left),
+                min(right),
+                min(front_left),
+                min(front_right),
+                min(back_left),
+                min(back_right),
+            )
+
+        def membership_close(x):
+            if x <= 0.5:
+                return 1.0
+            elif 0.5 < x <= 1.5:
+                return (1.5 - x) / 0.5
+            else:
+                return 0.0
+
+        sensor_membership = {}
+        sensor = grouped_sensor()
+        for i in sensor:
+            sensor_membership[sensor.index(i)] = membership_close(i)
+        return sensor_membership
+
+    def fuzzy_rule(self):
+        sensor_membership = self.membership()
+        rule = {}
+        rule[0] = 1.0 - sensor_membership[0]
+        rule[1] = sensor_membership[2] * -0.5
+        rule[2] = sensor_membership[3] * 0.5
+        rule[3] = sensor_membership[4] * -0.25
+        rule[4] = sensor_membership[5] * 0.25
+
+        angular = rule[1] + rule[2] + rule[3] + rule[4]
+        linear = rule[0]
+
+        return linear, angular
+
     def timerCallback(self):
         print("-----------------------------------------------------------")
-        cal = cal_avg(self.valueLaserRaw["ranges"])
-        closed_angle = cal.index(min(cal))
-        if self.state == 0:
-            self.avoid_hit()
-        elif self.state == 1:
-            if closed_angle < 18 and closed_angle > 0:
-                self.TurnTo(closed_angle * 10)
-            else:
-                self.TurnTo(closed_angle / 2 * -10)
-        elif self.state == 2:
-            self.state = 0
+        if self.init_odom_state == True:
+            linearVelocity, angularVelocity = self.fuzzy_rule()
+            self.publishVelocityCommand(linearVelocity, angularVelocity)
+            self.init_odom_state == False
 
     def euler_from_quaternion(self, quat):
         x = quat.x
