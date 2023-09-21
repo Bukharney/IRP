@@ -106,82 +106,11 @@ class Turtlebot3Controller(Node):
         _, _, self.last_rad = self.euler_from_quaternion(msg.pose.pose.orientation)
         self.init_odom_state = True
 
-    def avoid_hit(self):
-        cal = cal_avg(self.valueLaserRaw["ranges"])
-        x = min(min(cal[33:36]), min(cal[0:3]))
-        print(x)
-
-        if x < 0.25 or x < 0:
-            self.publishVelocityCommand(0.0, 0.0)
-        else:
-            self.publishVelocityCommand(x - 0.25, 0.0)
-
-    def turn_a(self):
-        cal = self.cal_avg(self.valueLaserRaw["ranges"])
-        min_index = cal.index(min(cal))
-        print(min_index)
-        if min_index < 18 and min_index > 0:
-            if min_index < 3:
-                self.publishVelocityCommand(0.0, 0.2)
-            else:
-                self.publishVelocityCommand(0.0, 0.9)
-        elif min_index > 18:
-            if min_index > 32:
-                self.publishVelocityCommand(0.0, -0.2)
-            else:
-                self.publishVelocityCommand(0.0, -0.9)
-        else:
-            self.publishVelocityCommand(0.0, 0.0)
-
-    def turn_to(self):
-        twist = Twist()
-
-        if self.get_key_state is False:
-            input_theta = self.get_key()
-            self.goal_rad = self.last_rad + input_theta
-            print("goal_1 ", self.goal_rad)
-            if self.goal_rad > math.pi:
-                n = (self.goal_rad / math.pi) % 2
-                self.goal_rad = self.goal_rad % math.pi
-                print("g_%", self.goal_rad)
-                if int(n) != 0:
-                    self.goal_rad = self.goal_rad - math.pi
-
-            if self.goal_rad < -math.pi:
-                n = (self.goal_rad / -math.pi) % 2
-                self.goal_rad = self.goal_rad % -math.pi
-                print("g_%", self.goal_rad)
-                if int(n) != 0:
-                    self.goal_rad = self.goal_rad + math.pi
-
-            self.total_angle = self.goal_rad - self.last_rad
-            self.get_key_state = True
-
-            print("goal_2 ", self.goal_rad)
-
-        else:
-            if self.step == 1:
-                self.angle = self.goal_rad - self.last_rad
-                angular_velocity = 0.1 * self.turn_side  # unit: rad/s
-                if (
-                    math.fabs(self.angle) > 0.01 or math.fabs(self.angle) < -0.01
-                ):  # 0.01 is small enough value
-                    twist.angular.z = angular_velocity
-                else:
-                    step += 1
-
-            elif self.step == 3:
-                self.step = 1
-                self.get_key_state = False
-
-            self.cmdVelPublisher.publish(twist)
-
     def ProgressBar(self):
         progress = 1.0 - (self.angle / self.total_angle)
         progress_bar = (
             "[" + "=" * int(progress * 20) + " " * (20 - int(progress * 20)) + "]"
         )
-
         print(f"Turning progress: {progress_bar} {progress:.2%}", end="\r")
 
     def normalize_angle(self, angle):
@@ -266,11 +195,9 @@ class Turtlebot3Controller(Node):
                 if remain_distance > 0.008:
                     if self.done == 0:
                         self.publishVelocityCommand(linear_velocity, 0.0)
-                    self.done = 1
 
                 else:
-                    if self.done == 1:
-                        self.publishVelocityCommand(0.0, 0.0)
+                    self.publishVelocityCommand(0.0, 0.0)
                     self.step += 1
 
             elif self.step == 2:

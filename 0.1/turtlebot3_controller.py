@@ -14,11 +14,7 @@ from nav_msgs.msg import Odometry
 
 def cal_avg(numbers):
     chuck_num = []
-    for i in range(0, 60, 10):
-        chuck_num.append(numbers[i : i + 10])
-    for i in range(310, 360, 10):
-        chuck_num.append(numbers[i : i + 10])
-    for i in range(60, 310, 10):
+    for i in range(0, 360, 10):
         chuck_num.append(numbers[i : i + 10])
 
     averages = []
