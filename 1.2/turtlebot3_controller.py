@@ -71,6 +71,7 @@ class Turtlebot3Controller(Node):
         self.step = 1
         self.get_key_state = False
         self.init_odom_state = False
+        self.init_fuzzy = False
         self.turn_side = 1
         # Use this timer for the job that should be looping until interrupted
         self.timer = self.create_timer(0.25, self.timerCallback)
@@ -181,16 +182,17 @@ class Turtlebot3Controller(Node):
                 self.state += 1
 
     def membership(self):
-        def grouped_sensor(self):
+        def grouped_sensor():
             cal = cal_avg(self.valueLaserRaw["ranges"])
-            front = [cal[0], cal[35]]
+            front = [cal[0], cal[35], cal[1], cal[34]]
             back = [cal[17], cal[18]]
-            front_left = cal[3:5]
-            front_right = cal[30:32]
+            front_left = cal[3:6]
+            front_right = cal[29:32]
             left = cal[8:10]
             right = cal[26:28]
             back_left = cal[12:14]
             back_right = cal[21:23]
+
             return (
                 min(front),
                 min(back),
@@ -203,27 +205,35 @@ class Turtlebot3Controller(Node):
             )
 
         def membership_close(x):
-            if x <= 0.5:
+            if x == 4.00:
+                x = 0.1
+            if x <= 0.1:
                 return 1.0
-            elif 0.5 < x <= 1.5:
-                return (1.5 - x) / 0.5
+            elif 0.1 < x <= 1.5:
+                return (1.5 - x) / 1.5
             else:
                 return 0.0
 
-        sensor_membership = {}
+        sensor_membership = []
         sensor = grouped_sensor()
         for i in sensor:
-            sensor_membership[sensor.index(i)] = membership_close(i)
+            sensor_membership.append(membership_close(i))
+
+        print(sensor)
         return sensor_membership
 
     def fuzzy_rule(self):
+        linear, angular = 0.0, 0.0
+        sensor_membership = []
+
         sensor_membership = self.membership()
+
         rule = {}
-        rule[0] = 1.0 - sensor_membership[0]
-        rule[1] = sensor_membership[2] * -0.5
-        rule[2] = sensor_membership[3] * 0.5
-        rule[3] = sensor_membership[4] * -0.25
-        rule[4] = sensor_membership[5] * 0.25
+        rule[0] = 0.9 - sensor_membership[0]
+        rule[1] = sensor_membership[2] * -0.2
+        rule[2] = sensor_membership[3] * 0.2
+        rule[3] = sensor_membership[4] * -0.4
+        rule[4] = sensor_membership[5] * 0.4
 
         angular = rule[1] + rule[2] + rule[3] + rule[4]
         linear = rule[0]
