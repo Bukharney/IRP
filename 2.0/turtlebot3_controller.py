@@ -148,10 +148,10 @@ class Turtlebot3Controller(Node):
     def WhatDoISee(self):
         sensor = self.group_sensor()
         sensor = self.find_min(sensor)
-        front = "-" if sensor["front"] <= 0.1 else ""
-        back = "-" if sensor["back"] <= 0.1 else ""
-        left = "|" if sensor["left"] <= 0.1 else ""
-        right = "|" if sensor["right"] <= 0.1 else ""
+        front = "-" if sensor["front"] <= 0.3 else " "
+        back = "-" if sensor["back"] <= 0.3 else " "
+        left = "|" if sensor["left"] <= 0.3 else " "
+        right = "|" if sensor["right"] <= 0.3 else " "
         robot = "O"
 
         print(f" {front} \n{left}{robot}{right}\n {back} ")
@@ -166,10 +166,10 @@ class Turtlebot3Controller(Node):
         return front, back, left, right
 
     def timerCallback(self):
-        print("-----------------------------------------------------------")
         if self.init_odom_state == True:
             WhatDoISee = self.WhatDoISee()
-            input("Press any key to continue...")
+            input("Enter any key to continue...")
+            self.init_odom_state = False
 
     def euler_from_quaternion(self, quat):
         x = quat.x
