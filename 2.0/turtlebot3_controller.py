@@ -148,11 +148,21 @@ class Turtlebot3Controller(Node):
     def WhatDoISee(self):
         sensor = self.group_sensor()
         sensor = self.find_min(sensor)
-        front = sensor["front"]
-        back = sensor["back"]
-        left = sensor["left"]
-        right = sensor["right"]
-        print("front: " + front, "back:" + back, "left" + left, "right" + right)
+        front = "-" if sensor["front"] <= 0.1 else ""
+        back = "-" if sensor["back"] <= 0.1 else ""
+        left = "|" if sensor["left"] <= 0.1 else ""
+        right = "|" if sensor["right"] <= 0.1 else ""
+        robot = "O"
+
+        print(f" {front} \n{left}{robot}{right}\n {back} ")
+
+        front = "wall" if front == "-" else "none"
+        back = "wall" if back == "-" else "none"
+        left = "wall" if left == "|" else "none"
+        right = "wall" if right == "|" else "none"
+
+        print(f"front: {front}, back: {back}, left: {left}, right: {right}")
+
         return front, back, left, right
 
     def timerCallback(self):
