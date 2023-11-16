@@ -211,7 +211,6 @@ class Turtlebot3Controller(Node):
         input_theta = float(input("Choose State : "))
         settings = termios.tcgetattr(sys.stdin)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
-
         return input_theta
 
     def walk(self):
