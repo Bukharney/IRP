@@ -60,7 +60,7 @@ class Turtlebot3Controller(Node):
             "linearVelocity": None,  # Datatype: geometry_msg/Vector3 (x,y,z)
             "angularVelocity": None,  # Datatype: geometry_msg/Vector3 (x,y,z)
         }
-        self.node_count = 0
+
         self.state = 0
         self.last_pose_x = 0.0
         self.last_pose_y = 0.0
@@ -70,9 +70,16 @@ class Turtlebot3Controller(Node):
         self.goal_rad = 0.0
         self.step = 1
         self.get_key_state = False
+        self.get_key_state_1 = False
+        self.get_key_state_2 = False
+        self.get_key_state_3 = False
         self.init_odom_state = False
         self.init_fuzzy = False
         self.turn_side = 1
+        self.seen = []
+        self.walk = 0
+        self.detect = 0
+        self.see = 0
         # Use this timer for the job that should be looping until interrupted
         self.timer = self.create_timer(0.25, self.timerCallback)
 
@@ -178,34 +185,9 @@ class Turtlebot3Controller(Node):
 
             elif self.step == 2:
                 self.step = 1
+                self.walk = 0
                 self.get_key_state = False
                 self.state += 1
-
-    def GoTo(self, distance):
-        if self.get_key_state is False:
-            self.distance_m = distance / 100
-            self.start_x = self.last_pose_x
-            self.start_y = self.last_pose_y
-            self.get_key_state = True
-
-        else:
-            if self.step == 1:
-                walk_distance = math.sqrt(
-                    (self.last_pose_x - self.start_x) ** 2
-                    + (self.last_pose_y - self.start_y) ** 2
-                )
-                remain_distance = self.distance_m - walk_distance
-                print(f"remain_distance : {remain_distance}", end="\r")
-                linear_velocity = 0.1
-                if remain_distance > 0.01:
-                    self.publishVelocityCommand(linear_velocity, 0.0)
-                else:
-                    self.publishVelocityCommand(0.0, 0.0)
-                    self.step += 1
-            elif self.step == 2:
-                self.step = 1
-                self.state += 1
-                self.get_key_state = False
 
     def WhatDoISee(self):
         class detect:
@@ -217,36 +199,21 @@ class Turtlebot3Controller(Node):
         sensor = self.group_sensor()
         sensor = self.find_min(sensor)
 
-        detect.front = True if sensor["front"] <= 0.3 else False
-        detect.back = True if sensor["back"] <= 0.3 else False
-        detect.left = True if sensor["left"] <= 0.3 else False
-        detect.right = True if sensor["right"] <= 0.3 else False
+        count = 4
+        if sensor["front"] <= 0.3:
+            count -= 1
+            detect.front = True
+        if sensor["back"] <= 0.3:
+            count -= 1
+            detect.back = True
+        if sensor["left"] <= 0.3:
+            count -= 1
+            detect.left = True
+        if sensor["right"] <= 0.3:
+            count -= 1
+            detect.right = True
 
-        return detect
-
-    def Turn(self):
-        detect = self.WhatDoISee()
-        wall = [
-            detect.front,
-            detect.right,
-            detect.back,
-            detect.left,
-        ]
-        if wall == [True, False, False, False]:
-            self.TurnTo(90)
-        elif wall == [True, True, False, False]:
-            self.TurnTo(-90)
-        elif wall == [True, False, False, True]:
-            self.TurnTo(90)
-        elif (
-            wall == [True, True, True, False]
-            or wall == [True, True, False, True]
-            or wall == [True, False, True, True]
-            or wall == [False, True, True, True]
-        ):
-            self.done = True if input("Restart? (y/n) : ") == "y" else exit()
-        elif wall[0] == False:
-            self.GTNN(1)
+        return count, detect
 
     def keep_distance(self):
         sensor = self.group_sensor()
@@ -259,7 +226,7 @@ class Turtlebot3Controller(Node):
             return 0.0
 
     def GTNN(self, n_node):
-        distance = 30 * n_node
+        distance = 29.0 * n_node
         if self.get_key_state is False:
             self.distance_m = distance / 100
             self.start_x = self.last_pose_x
@@ -275,7 +242,7 @@ class Turtlebot3Controller(Node):
                 remain_distance = self.distance_m - walk_distance
                 print(f"remain_distance : {remain_distance}", end="\r")
                 linear_velocity = 0.1
-                angular_velocity = self.keep_distance()
+                angular_velocity = 0.0
                 if remain_distance > 0.01:
                     self.publishVelocityCommand(linear_velocity, angular_velocity)
                 else:
@@ -283,11 +250,88 @@ class Turtlebot3Controller(Node):
                     self.step += 1
             elif self.step == 2:
                 self.step = 1
-                self.state += 1
+                self.walk += 1
                 self.get_key_state = False
+                self.state += 1
+
+    def seen_history(self, see):
+        if len(self.seen) <= 3:
+            self.seen.append(see)
+        else:
+            self.seen.pop(0)
+            self.seen.append(see)
+
+    def walk_dicide(self, detect):
+        print("dicide")
+        if detect.front == False:
+            self.GTNN(1)
+        else:
+            if detect.left == True and detect.right == True:
+                input()
+            elif detect.left == True:
+                self.TurnTo(-91)
+            elif detect.right == True:
+                self.TurnTo(91)
+            else:
+                self.TurnTo(-91)
+
+    def win(self, see):
+        print("win")
+        print("walk: ", self.walk)
+        if self.walk == 3:
+            print("victory")
+            if self.state == 0:
+                if see == 3:
+                    self.TurnTo(-91)
+                    if self.state == 1:
+                        self.GTNN(1)
+                    elif self.state == 2:
+                        input()
+                else:
+                    if self.state == 1:
+                        self.TurnTo(180)
+                    elif self.state == 2:
+                        self.GTNN(2)
+                    elif self.state == 3:
+                        self.TurnTo(-91)
+                    elif self.state == 4:
+                        self.GTNN(1)
+                    elif self.state == 5:
+                        input()
+        elif self.seen == [3, 3, 3]:
+            if self.state == 0:
+                self.TurnTo(-90)
+            elif self.state == 1:
+                self.GTNN(1)
+            elif self.state == 3:
+                self.get_key_state_2 = True
+        else:
+            self.get_key_state_2 = True
+
+    def walk_to(self):
+        if self.init_odom_state is True:
+            if self.get_key_state_1 is False:
+                self.state = 0
+                if self.get_key_state_2 is False:
+                    if self.get_key_state_3 is False:
+                        self.see, _ = self.WhatDoISee()
+                        self.get_key_state_3 = True
+                    else:
+                        self.win(self.see)
+                self.state = 0
+                see, self.detect = self.WhatDoISee()
+                self.seen_history(see)
+                self.get_key_state_1 = True
+            else:
+                if self.state == 0:
+                    self.walk_dicide(self.detect)
+                elif self.state == 1:
+                    self.get_key_state_2 = False
+                    self.get_key_state_1 = False
 
     def timerCallback(self):
-        self.GTNN(2)
+        self.walk_to()
+        print("state: ", self.state)
 
     def euler_from_quaternion(self, quat):
         x = quat.x
