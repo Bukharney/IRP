@@ -233,7 +233,6 @@ class Turtlebot3Controller(Node):
             self.start_x = self.last_pose_x
             self.start_y = self.last_pose_y
             self.get_key_state = True
-
         else:
             if self.step == 1:
                 walk_distance = math.sqrt(

@@ -252,73 +252,28 @@ class Turtlebot3Controller(Node):
             elif self.step == 2:
                 self.step = 1
                 self.walk += 1
-                see, _ = self.WhatDoISee()
-                self.seen_history(see)
                 self.state += 1
                 self.get_key_state = False
-
-    def seen_history(self, see):
-        if len(self.seen) < 3:
-            self.seen.append(see)
-        else:
-            self.seen.pop(0)
-            self.seen.append(see)
 
     def walk_dicide(self, detect):
         print("dicide")
         if detect.front == False:
+            if detect.back == True:
+                if detect.left == True:
+                    self.TurnTo(-91)
+                elif detect.right == True:
+                    self.TurnTo(91)
             self.GTNN(1)
         else:
-            if detect.left == True and detect.right == True:
+            if detect.left == True and detect == True:
                 input()
             elif detect.left == True:
                 self.TurnTo(-91)
             elif detect.right == True:
                 self.TurnTo(91)
-            else:
-                self.TurnTo(-91)
+            
 
-    def win(self):
-        print("win")
-        print("walk: ", self.walk)
-        if self.walk == 3 or self.victory:
-            self.victory = True
-            print("victory")
-            print(self.state)
-            if self.get_key_state_3 == False:
-                self.see, _ = self.WhatDoISee()
-                print(self.see)
-                self.get_key_state_3 = True
-            if self.see == 3:
-                if self.state == 0:
-                    self.TurnTo(-91)
-                elif self.state == 1:
-                    self.GTNN(1)
-                elif self.state == 2:
-                    input()
-            else:
-                if self.state == 0:
-                    self.TurnTo(180)
-                elif self.state == 1:
-                    self.GTNN(2)
-                elif self.state == 2:
-                    self.TurnTo(-91)
-                elif self.state == 3:
-                    self.GTNN(1)
-                elif self.state == 4:
-                    input()
-        elif self.seen == [3, 3, 3]:
-            if self.state == 0:
-                self.TurnTo(-90)
-            elif self.state == 1:
-                self.GTNN(1)
-            elif self.state == 3:
-                self.get_key_state_2 = True
-        else:
-            self.get_key_state_2 = True
-            self.get_key_state_1 = True
-
-    def walk_to(self):
+     def walk_to(self):
         if self.init_odom_state is True:
             if self.get_key_state_1 is False:
                 if self.get_key_state_2 is False:
@@ -334,7 +289,12 @@ class Turtlebot3Controller(Node):
                     self.state = 0
 
     def timerCallback(self):
-        self.walk_to()
+        if self.init_odom_state is True:
+            if self.get_key_state_1 == False:
+                _, self.detect = self.WhatDoISee()
+                self.get_key_state_1 = True
+            else:
+                self.walk_dicide(self.detect)
 
     def euler_from_quaternion(self, quat):
         x = quat.x
