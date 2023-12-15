@@ -184,7 +184,7 @@ class Turtlebot3Controller(Node):
     def membership(self):
         def grouped_sensor():
             cal = cal_avg(self.valueLaserRaw["ranges"])
-            front = [cal[0], cal[35], cal[1], cal[34]]
+            front = [cal[0], cal[35], cal[1], cal[34], cal[2],cal[33]]
             back = [cal[17], cal[18]]
             front_left = cal[3:6]
             front_right = cal[29:32]
@@ -206,11 +206,11 @@ class Turtlebot3Controller(Node):
 
         def membership_close(x):
             if x == 4.00:
-                x = 0.1
-            if x <= 0.1:
+                x = 0.08
+            if x <= 0.08:
                 return 1.0
-            elif 0.1 < x <= 1.5:
-                return (1.5 - x) / 1.5
+            elif 0.08 < x <= 0.5:
+                return (0.5 - x) / 0.5
             else:
                 return 0.0
 
@@ -229,14 +229,15 @@ class Turtlebot3Controller(Node):
         sensor_membership = self.membership()
 
         rule = {}
-        rule[0] = 0.9 - sensor_membership[0]
-        rule[1] = sensor_membership[2] * -0.2
-        rule[2] = sensor_membership[3] * 0.2
-        rule[3] = sensor_membership[4] * -0.4
-        rule[4] = sensor_membership[5] * 0.4
+        rule[0] = 0.35 - (sensor_membership[0] * 0.4) 
+        rule[1] = sensor_membership[2] * -0.1
+        rule[2] = sensor_membership[3] * 0.1
+        rule[3] = sensor_membership[4] * -0.3
+        rule[4] = sensor_membership[5] * 0.3
+        rule[5] = max(sensor_membership[4],sensor_membership[5]) * -0.1
 
         angular = rule[1] + rule[2] + rule[3] + rule[4]
-        linear = rule[0]
+        linear = rule[0] + rule[5]
 
         return linear, angular
 
